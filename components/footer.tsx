@@ -28,7 +28,7 @@ export function Footer() {
                 Twitter
               </Link>
               <Link
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/in/yash-patil6010/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-foreground hover:text-accent transition-colors underline underline-offset-4 decoration-border hover:decoration-accent"
@@ -36,7 +36,7 @@ export function Footer() {
                 LinkedIn
               </Link>
               <Link
-                href="mailto:hello@yashkgp.me"
+                href="mailto:yashpatil303022@gmail.com"
                 className="text-sm text-foreground hover:text-accent transition-colors underline underline-offset-4 decoration-border hover:decoration-accent"
               >
                 Email

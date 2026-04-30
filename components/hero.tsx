@@ -7,14 +7,14 @@ export function Hero() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-12">
           {/* Text Content */}
           <div className="flex-1 max-w-xl">
-            <p className="text-sm uppercase tracking-[0.2em] text-accent mb-6">
-              Product Thinker
+            <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
+              Product <span className="text-accent">/</span> Strategy <span className="text-accent">/</span> Design
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tight text-foreground">
-              Building systems that scale.
+            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tight text-foreground text-balance">
+              Yash Patil
             </h1>
             <p className="mt-8 text-lg md:text-xl text-muted-foreground leading-relaxed">
-              I analyze products across market dynamics, monetization, and user behavior to understand what drives real impact.
+              Pre-final year at <span className="text-foreground">IIT Kharagpur</span>. Curious about how products work, why users behave the way they do, and the systems behind scale.
             </p>
             
             {/* Quick Links */}
