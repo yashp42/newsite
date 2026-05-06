@@ -2,20 +2,8 @@ import { Client } from "@notionhq/client"
 import { NotionToMarkdown } from "notion-to-md"
 import type { 
   PageObjectResponse, 
-  QueryDatabaseResponse,
   RichTextItemResponse 
 } from "@notionhq/client/build/src/api-endpoints"
-
-// Initialize Notion client
-const notion = new Client({
-  auth: process.env.NOTION_API_KEY,
-})
-
-// Initialize notion-to-md converter
-const n2m = new NotionToMarkdown({ notionClient: notion })
-
-// Database ID from the created database
-const DATABASE_ID = process.env.NOTION_DATABASE_ID!
 
 // Type definitions
 export type Category = "Product" | "Strategy" | "Design" | "Teardown"
@@ -37,6 +25,62 @@ export interface BlogPost {
 
 export interface BlogPostWithContent extends BlogPost {
   content: string
+}
+
+// Lazy initialization to ensure env vars are available at runtime
+let _notion: Client | null = null
+let _n2m: NotionToMarkdown | null = null
+let _dataSourceId: string | null = null
+
+function getNotionClient(): Client {
+  if (!_notion) {
+    const apiKey = process.env.NOTION_API_KEY
+    if (!apiKey) {
+      throw new Error("NOTION_API_KEY environment variable is not set")
+    }
+    _notion = new Client({ auth: apiKey })
+  }
+  return _notion
+}
+
+function getN2M(): NotionToMarkdown {
+  if (!_n2m) {
+    _n2m = new NotionToMarkdown({ notionClient: getNotionClient() })
+  }
+  return _n2m
+}
+
+function getDatabaseId(): string {
+  const dbId = process.env.NOTION_DATABASE_ID
+  if (!dbId) {
+    throw new Error("NOTION_DATABASE_ID environment variable is not set")
+  }
+  return dbId
+}
+
+// Get the data source ID from the database (Notion SDK v5 uses dataSources.query)
+async function getDataSourceId(): Promise<string> {
+  if (_dataSourceId) {
+    return _dataSourceId
+  }
+  
+  const notion = getNotionClient()
+  const databaseId = getDatabaseId()
+  
+  // Retrieve the database to get its data sources
+  const database = await notion.databases.retrieve({
+    database_id: databaseId,
+  })
+  
+  // Get the first data source ID from the database
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dataSources = (database as any).data_sources
+  if (!dataSources || dataSources.length === 0) {
+    throw new Error("No data sources found in database. The database may need to be shared with your Notion integration.")
+  }
+  
+  _dataSourceId = dataSources[0].id
+  return _dataSourceId
 }
 
 // Helper to extract text from rich text array
@@ -114,11 +158,15 @@ function parsePageToPost(page: PageObjectResponse): BlogPost {
   }
 }
 
-// Fetch all published posts
+// Fetch all published posts using Notion SDK v5 dataSources.query API
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   try {
-    const response: QueryDatabaseResponse = await notion.databases.query({
-      database_id: DATABASE_ID,
+    const notion = getNotionClient()
+    const dataSourceId = await getDataSourceId()
+    
+    // Use the new dataSources.query endpoint (Notion SDK v5)
+    const response = await notion.dataSources.query({
+      data_source_id: dataSourceId,
       filter: {
         property: "Status",
         select: {
@@ -137,7 +185,22 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
       .filter((page): page is PageObjectResponse => "properties" in page)
       .map(parsePageToPost)
   } catch (error) {
-    console.error("Error fetching posts from Notion:", error)
+    // Log helpful error information
+    if (error instanceof Error) {
+      if (error.message.includes("object_not_found")) {
+        console.error(
+          "[Notion Integration] Database not found. Please ensure:\n" +
+          "1. The NOTION_DATABASE_ID environment variable is correct\n" +
+          "2. The database is shared with your Notion integration\n" +
+          "   - Go to the database in Notion\n" +
+          "   - Click '...' menu → 'Add connections'\n" +
+          "   - Select your integration\n" +
+          `Database ID being used: ${process.env.NOTION_DATABASE_ID || "NOT SET"}`
+        )
+      } else {
+        console.error("Error fetching posts from Notion:", error.message)
+      }
+    }
     return []
   }
 }
@@ -145,8 +208,13 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
 // Fetch a single post by slug
 export async function getPostBySlug(slug: string): Promise<BlogPostWithContent | null> {
   try {
-    const response: QueryDatabaseResponse = await notion.databases.query({
-      database_id: DATABASE_ID,
+    const notion = getNotionClient()
+    const dataSourceId = await getDataSourceId()
+    const n2m = getN2M()
+    
+    // Use the new dataSources.query endpoint (Notion SDK v5)
+    const response = await notion.dataSources.query({
+      data_source_id: dataSourceId,
       filter: {
         and: [
           {
