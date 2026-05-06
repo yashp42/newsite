@@ -1,27 +1,5 @@
 import Link from "next/link"
-
-// Post categories that align with your interests
-type Category = "Product" | "Strategy" | "Design" | "Teardown"
-
-interface Post {
-  slug: string
-  title: string
-  excerpt: string
-  category: Category
-  date: string // Format: "Apr 2026"
-}
-
-// Add your posts here - structure is ready
-const posts: Post[] = [
-  // Example post structure (uncomment and modify when ready):
-  {
-     slug: "notion-product-teardown",
-     title: "How Notion Built a Product That Builds Products",
-     excerpt: "Analyzing the primitives-first approach and why flexibility won.",
-     category: "Teardown",
-     date: "Apr 2026",
-   },
-]
+import { getPosts, type Post, type Category } from "@/lib/notion"
 
 const categoryStyles: Record<Category, string> = {
   Product: "text-accent",
@@ -30,7 +8,8 @@ const categoryStyles: Record<Category, string> = {
   Teardown: "text-accent",
 }
 
-export function Writing() {
+export async function Writing() {
+  const posts = await getPosts()
   const hasContent = posts.length > 0
 
   return (
