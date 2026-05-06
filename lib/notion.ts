@@ -10,12 +10,10 @@ const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 })
 
-// Clean the database ID - remove any prefix like "collection://" and normalize format
-const rawDatabaseId = process.env.NOTION_DATABASE_ID || ""
-const databaseId = rawDatabaseId
-  .replace(/^collection:\/\//, "") // Remove collection:// prefix
-  .replace(/^https?:\/\/.*\//, "") // Remove any URL prefix
-  .replace(/[^a-f0-9-]/gi, "") // Keep only hex chars and dashes
+// Hardcoded database ID (provided by user)
+// TODO: Once NOTION_DATABASE_ID env var is updated to the correct value, 
+// this can be changed back to: process.env.NOTION_DATABASE_ID
+const databaseId = "f4fe9e28-956d-4a11-999f-edddaf3b4a07"
 
 // Types
 export type Category = "Product" | "Strategy" | "Design" | "Teardown"
@@ -131,32 +129,26 @@ function parsePost(page: PageObjectResponse): Post | null {
 // Get the data source ID from the database
 async function getDataSourceId(): Promise<string | null> {
   if (!databaseId) {
-    console.error("[v0] NOTION_DATABASE_ID is not set or invalid")
+    console.error("NOTION_DATABASE_ID is not set or invalid")
     return null
   }
-  
-  console.log("[v0] Using cleaned database ID:", databaseId)
   
   try {
     const database = await notion.databases.retrieve({
       database_id: databaseId,
     })
     
-    console.log("[v0] Database retrieved:", database.id)
-    
     // In SDK v5, databases have a data_sources array
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = database as any
     if (db.data_sources && Array.isArray(db.data_sources) && db.data_sources.length > 0) {
-      console.log("[v0] Found data source:", db.data_sources[0].id)
       return db.data_sources[0].id
     }
     
     // Fallback: if no data_sources, return the database ID (for older API versions)
-    console.log("[v0] No data_sources found, using database ID as fallback")
     return databaseId
   } catch (error) {
-    console.error("[v0] Error fetching database:", error)
+    console.error("Error fetching database:", error)
     return null
   }
 }
